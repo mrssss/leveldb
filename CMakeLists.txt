@@ -34,6 +34,15 @@ option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" ON)
 option(LEVELDB_BUILD_BENCHMARKS "Build LevelDB's benchmarks" ON)
 option(LEVELDB_INSTALL "Install LevelDB's header and library" ON)
 
+option (ENABLE_CCACHE "Use ccache to accelerate compiling" OFF)
+if (ENABLE_CCACHE)
+    find_program (CCACHE_PROGRAM ccache)
+
+    if (CCACHE_PROGRAM)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+    endif() # CCACHE_PROGRAM
+endif() # ENABLE_CCACHE
+
 include(CheckIncludeFile)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
@@ -513,3 +522,5 @@ if(LEVELDB_INSTALL)
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
   )
 endif(LEVELDB_INSTALL)
+
+add_subdirectory(examples)
