@@ -13,3 +13,9 @@ target_link_libraries(read_write_db
     PRIVATE
         leveldb
 )
+
+add_executable(write_batch read_write/write_batch.cpp)
+target_link_libraries(write_batch
+    PRIVATE
+        leveldb
+)

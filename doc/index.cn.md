@@ -66,10 +66,9 @@ if (s.ok()) s = db->Delete(leveldb::WriteOptions(), key1);
 
 ## 原子更新
 
-Note that if the process dies after the Put of key2 but before the delete of
-key1, the same value may be left stored under multiple keys. Such problems can
-be avoided by using the `WriteBatch` class to atomically apply a set of updates:
-
+需要注意的是，如果进程在添加key2之后、删除key1之前挂掉了，那么这个值会存储在
+多个键中。这样的问题可以通过使用`WriteBatch`类来避免掉。这个类可以原子性的更
+新一批改动到数据库中:
 
 ```c++
 #include "leveldb/write_batch.h"
@@ -84,15 +83,13 @@ if (s.ok()) {
 }
 ```
 
-The `WriteBatch` holds a sequence of edits to be made to the database, and these
-edits within the batch are applied in order. Note that we called Delete before
-Put so that if key1 is identical to key2, we do not end up erroneously dropping
-the value entirely.
+`WriteBatch`会保留一系列对数据库的改动，这些改动会按照顺序更新在数据库上面。
+我们在Put之前调用Delete，这样如果key1和key2相同，我们也不会错误的把这个值给删除掉。
 
-Apart from its atomicity benefits, `WriteBatch` may also be used to speed up
-bulk updates by placing lots of individual mutations into the same batch.
+使用`WriteBatch`的另外一个好处是，通过把许多独立的更新操作放进同一个batch中
+写入数据库，可以加速批量更新的速度。
 
-## Synchronous Writes
+## 同步写操作
 
 By default, each write to leveldb is asynchronous: it returns after pushing the
 write from the process into the operating system. The transfer from operating

@@ -2,15 +2,7 @@
 
 #include "leveldb/db.h"
 
-namespace
-{
-
-void check_status(const leveldb::Status & s)
-{
-    if (!s.ok())
-        std::cerr << s.ToString() << std::endl;
-}
-}
+#include "check_status.h"
 
 int main()
 {
@@ -29,7 +21,7 @@ int main()
 
     // 写数据
     check_status(db->Put(leveldb::WriteOptions(), "key-a", "value-a"));
-    
+
     // 读数据
     check_status(db->Get(leveldb::ReadOptions(), "key-a", &value));
 
