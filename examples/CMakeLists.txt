@@ -19,3 +19,10 @@ target_link_libraries(write_batch
     PRIVATE
         leveldb
 )
+
+add_executable(sync_write_benchmark read_write/sync_write.cpp)
+target_link_libraries(sync_write_benchmark
+    PRIVATE
+        leveldb
+        benchmark
+)

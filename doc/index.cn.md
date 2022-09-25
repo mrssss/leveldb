@@ -91,14 +91,11 @@ if (s.ok()) {
 
 ## 同步写操作
 
-By default, each write to leveldb is asynchronous: it returns after pushing the
-write from the process into the operating system. The transfer from operating
-system memory to the underlying persistent storage happens asynchronously. The
-sync flag can be turned on for a particular write to make the write operation
-not return until the data being written has been pushed all the way to
-persistent storage. (On Posix systems, this is implemented by calling either
-`fsync(...)` or `fdatasync(...)` or `msync(..., MS_SYNC)` before the write
-operation returns.)
+默认情况下，leveldb的写操作都是异步的:它把写操作从进程提交给操作系统之后就返回了。
+至于什么时候从内存持久化到磁盘是异步发生的。如果有特殊的写操作要求是同步的话，可以
+通过打开同步标志来控制同步写操作。这样的话，只有当数据写入了持久化存储之后，写操
+作的函数调用才会返回。(在实现了POSIX的系统中，这是通过在执行写操作之前调用`fsync(...)`
+或`fdatasync(...)`或`msync(..., MS_SYNC)`来实现)。
 
 ```c++
 leveldb::WriteOptions write_options;
@@ -106,24 +103,18 @@ write_options.sync = true;
 db->Put(write_options, ...);
 ```
 
-Asynchronous writes are often more than a thousand times as fast as synchronous
-writes. The downside of asynchronous writes is that a crash of the machine may
-cause the last few updates to be lost. Note that a crash of just the writing
-process (i.e., not a reboot) will not cause any loss since even when sync is
-false, an update is pushed from the process memory into the operating system
-before it is considered done.
+通常异步写操作会比同步写操作快1000倍以上。异步写操作的缺点在于，如果机器宕机了可
+能会导致最后的一些少量的更新会丢失。如果只是进程的崩溃，即使sync标志是false，也
+不会导致任何数据的丢失，一个数据更新从进程内存提交给操作系统之后就被当做操作完成了。
 
-Asynchronous writes can often be used safely. For example, when loading a large
-amount of data into the database you can handle lost updates by restarting the
-bulk load after a crash. A hybrid scheme is also possible where every Nth write
-is synchronous, and in the event of a crash, the bulk load is restarted just
-after the last synchronous write finished by the previous run. (The synchronous
-write can update a marker that describes where to restart on a crash.)
+异步操作通常可以安全地被使用。例如，当要写入一块很大的数据的时候程序崩溃了，你可
+以在崩溃恢复后重新写入这一批数据。混合架构也是可行的：每N个写操作都以一个同步的
+写操作结束(其他都是异步写操作)。当程序崩溃的时候，重新写入上次同步写操作之后的所
+有数据(同步写操作可以用来更新从什么位置继续写操作的标记)。
 
-`WriteBatch` provides an alternative to asynchronous writes. Multiple updates
-may be placed in the same WriteBatch and applied together using a synchronous
-write (i.e., `write_options.sync` is set to true). The extra cost of the
-synchronous write will be amortized across all of the writes in the batch.
+`WriteBatch`提供了一种异步写的替代方案。可以将多个更新放到同一个WriteBatch中，
+并且使用同步的写操作更新数据。(把`write_options.sync`设置为true)。这样的话，
+同步写操作的额外开销会被分摊到一个batch中的所以写操作上。
 
 ## Concurrency
 
