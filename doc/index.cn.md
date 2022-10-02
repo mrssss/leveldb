@@ -116,23 +116,18 @@ db->Put(write_options, ...);
 并且使用同步的写操作更新数据。(把`write_options.sync`设置为true)。这样的话，
 同步写操作的额外开销会被分摊到一个batch中的所以写操作上。
 
-## Concurrency
+## 并发
 
-A database may only be opened by one process at a time. The leveldb
-implementation acquires a lock from the operating system to prevent misuse.
-Within a single process, the same `leveldb::DB` object may be safely shared by
-multiple concurrent threads. I.e., different threads may write into or fetch
-iterators or call Get on the same database without any external synchronization
-(the leveldb implementation will automatically do the required synchronization).
-However other objects (like Iterator and `WriteBatch`) may require external
-synchronization. If two threads share such an object, they must protect access
-to it using their own locking protocol. More details are available in the public
-header files.
+在同一时刻，只能有一个进程打开某个数据库。为了防止误用，leveldb会从操作系统那里申
+请一个文件锁。在同一个进城内，同样的一个`leveldb::DB`对象可以安全地被多个并发的
+线程共享。例如，不同的线程可以在不需要外部同步机制的情况下对同一个数据库进行写入、
+获取迭代器和读的操作（leveldb的有内部的同步机制）。但是其他的一些对象（Iterator
+和`WriteBatch`）会需要额外的同步机制。如果两个线程共享同一个对象，它们必须使用自
+己的锁机制。更多的细节可以看公共的头文件中的内容。
 
-## Iteration
+## 迭代器
 
-The following example demonstrates how to print all key,value pairs in a
-database.
+下面的例子说明了怎么打印数据库中所有的键-值对。
 
 ```c++
 leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
@@ -143,8 +138,7 @@ assert(it->status().ok());  // Check for any errors found during the scan
 delete it;
 ```
 
-The following variation shows how to process just the keys in the range
-[start,limit):
+下面的例子展示了怎么处理在范围[start, limit)内的键。
 
 ```c++
 for (it->Seek(start);
@@ -154,8 +148,7 @@ for (it->Seek(start);
 }
 ```
 
-You can also process entries in reverse order. (Caveat: reverse iteration may be
-somewhat slower than forward iteration.)
+你也可以逆向处理所有的键值对（逆向迭代器比前向迭代器慢一些）。
 
 ```c++
 for (it->SeekToLast(); it->Valid(); it->Prev()) {

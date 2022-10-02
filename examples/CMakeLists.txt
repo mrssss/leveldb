@@ -26,3 +26,9 @@ target_link_libraries(sync_write_benchmark
         leveldb
         benchmark
 )
+
+add_executable(iteration_read read_write/iteration.cpp)
+target_link_libraries(iteration_read
+    PRIVATE
+        leveldb
+)
