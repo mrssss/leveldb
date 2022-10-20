@@ -217,13 +217,13 @@ Use(slice);
 
 当出了if块的时候str对象会被释放掉，slice中的指针就会指向一块已经被释放的内存。
 
-## Comparators
+## 比较器
 
-The preceding examples used the default ordering function for key, which orders
-bytes lexicographically. You can however supply a custom comparator when opening
-a database.  For example, suppose each database key consists of two numbers and
-we should sort by the first number, breaking ties by the second number. First,
-define a proper subclass of `leveldb::Comparator` that expresses these rules:
+在前面的例子中，用到了默认的排序函数根据键来排序，默认采用了字节序。我们也可以在
+打开数据库的使用提供一个自定义的比较器。例如，如果一个数据库中的键包含两个数字，
+我们可以先根据第一个数字进行排序；如果相等，再使用第二个数字进行排序。
+
+首先，我们会定义一个`leveldb::Comparator`的子类来表示这个规则：
 
 ```c++
 class TwoPartComparator : public leveldb::Comparator {
@@ -250,7 +250,7 @@ class TwoPartComparator : public leveldb::Comparator {
 };
 ```
 
-Now create a database using this custom comparator:
+接着创建一个使用这个自定义比较器的数据库：
 
 ```c++
 TwoPartComparator cmp;
@@ -262,47 +262,47 @@ leveldb::Status status = leveldb::DB::Open(options, "/tmp/testdb", &db);
 ...
 ```
 
-### Backwards compatibility
+### 后向兼容性
 
-The result of the comparator's Name method is attached to the database when it
-is created, and is checked on every subsequent database open. If the name
-changes, the `leveldb::DB::Open` call will fail. Therefore, change the name if
-and only if the new key format and comparison function are incompatible with
-existing databases, and it is ok to discard the contents of all existing
-databases.
+当创建一个数据库的时候，会给这个数据库附加上比较器Name方法的返回结果，在以后每次
+打开这个数据库的时候，都会检查这个名字。如果这个名字改变了，`leveldb::DB::Open`
+会调用失败。所以，当且仅当：
+1. 数据库键的格式发生变化
+2. 比较函数不能和现有的数据库兼容的时候
+3. 允许丢掉现有数据库中存储的所有数据
+这三个条件同时满足的情况下，才能够改变比较器的名称。
 
-You can however still gradually evolve your key format over time with a little
-bit of pre-planning. For example, you could store a version number at the end of
-each key (one byte should suffice for most uses). When you wish to switch to a
-new key format (e.g., adding an optional third part to the keys processed by
-`TwoPartComparator`), (a) keep the same comparator name (b) increment the
-version number for new keys (c) change the comparator function so it uses the
-version numbers found in the keys to decide how to interpret them.
+尽管如此，你还是可以有计划的逐步的修改你的键的格式。比如你可以在每个键的末尾存储
+一个version字段（一个字节就够用了）。当你希望切换到新的键格式的时候（比如，在前
+面的例子中，我们想给键加第三个数字）：
+1. 使用同一个比较器的名称
+2. 新的键使用新的version编号
+3. 更新比较器函数，让它能够根据version编号来决定怎么处理这个键
 
-## Performance
+## 性能调优
 
-Performance can be tuned by changing the default values of the types defined in
-`include/options.h`.
+可以通过改变在`include/options.h`中定义的类型的默认值来做性能调优。
 
-### Block size
+### Block大小
 
-leveldb groups adjacent keys together into the same block and such a block is
-the unit of transfer to and from persistent storage. The default block size is
-approximately 4096 uncompressed bytes.  Applications that mostly do bulk scans
-over the contents of the database may wish to increase this size. Applications
-that do a lot of point reads of small values may wish to switch to a smaller
-block size if performance measurements indicate an improvement. There isn't much
-benefit in using blocks smaller than one kilobyte, or larger than a few
-megabytes. Also note that compression will be more effective with larger block
-sizes.
+leveldb会将临近的键组织到同一个block中，这样的一个block是用来持久化的最基本的
+单元。默认的block大小是大约4096个未压缩的字节。
 
-### Compression
+通常进行批量读的应用程序会倾向于增加这个值。而对于经常进行单点读取小变量的应用程
+序则会倾向于设置一个小一点的block size。这样性能会有所提升。
 
-Each block is individually compressed before being written to persistent
-storage. Compression is on by default since the default compression method is
-very fast, and is automatically disabled for uncompressible data. In rare cases,
-applications may want to disable compression entirely, but should only do so if
-benchmarks show a performance improvement:
+但是，使用小于1KB的或者大于几MB的block size不会对性能有所帮助。block size的
+性能调优需要在1KB～MB的范围之间进行。
+
+除此之外，大一些的block size对于压缩算法更有帮助。
+
+### 压缩
+
+在写入到持久化的存储之前，每个block会被单独的进行压缩。现在，默认的压缩算法的
+速度是非常快的，所以一般压缩功能都会打开，仅有一小部分没有办法压缩的数据是不进
+行压缩操作的。
+在极少数的用例中，应用程序想要关闭所有的数据压缩的功能，但是我们也需要在看到
+benchmarks测试显示有性能提升的时候才能够这么做（关闭数据压缩功能）：
 
 ```c++
 leveldb::Options options;
@@ -310,11 +310,11 @@ options.compression = leveldb::kNoCompression;
 ... leveldb::DB::Open(options, name, ...) ....
 ```
 
-### Cache
+### 缓存
 
-The contents of the database are stored in a set of files in the filesystem and
-each file stores a sequence of compressed blocks. If options.block_cache is
-non-NULL, it is used to cache frequently used uncompressed block contents.
+数据库中的内容是存储在文件系统的一系列的文件中的。每个文件中存储了压缩过的block
+的序列。如果`options.block_cache`被设置成非空，那么最常被访问到的解压后的
+block的内容会被缓存起来。
 
 ```c++
 #include "leveldb/cache.h"
