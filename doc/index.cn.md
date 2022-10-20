@@ -156,15 +156,15 @@ for (it->SeekToLast(); it->Valid(); it->Prev()) {
 }
 ```
 
-## Snapshots
+## 快照
 
-Snapshots provide consistent read-only views over the entire state of the
-key-value store.  `ReadOptions::snapshot` may be non-NULL to indicate that a
-read should operate on a particular version of the DB state. If
-`ReadOptions::snapshot` is NULL, the read will operate on an implicit snapshot
-of the current state.
+快照提供了一个完整的包含了所有键值存储状态的持久化的只读视图。`ReadOptions::snapshot`
+不是空代表着需要读特定版本的数据库快照。如果`ReadOptions::snapshot`为空，会读取
+当前数据库的状态。
+
 
 Snapshots are created by the `DB::GetSnapshot()` method:
+快照是通过`DB::GetSnapshot()`方法来创建的：
 
 ```c++
 leveldb::ReadOptions options;
@@ -176,22 +176,18 @@ delete iter;
 db->ReleaseSnapshot(options.snapshot);
 ```
 
-Note that when a snapshot is no longer needed, it should be released using the
-`DB::ReleaseSnapshot` interface. This allows the implementation to get rid of
-state that was being maintained just to support reading as of that snapshot.
+需要注意的是当不需要使用一个快照的时候，可以使用`DB::ReleaseSnapshot`接口。
+然后leveldb的实现就不会再去维护这个快照相关的状态数据了。
 
-## Slice
+## 切片
 
-The return value of the `it->key()` and `it->value()` calls above are instances
-of the `leveldb::Slice` type. Slice is a simple structure that contains a length
-and a pointer to an external byte array. Returning a Slice is a cheaper
-alternative to returning a `std::string` since we do not need to copy
-potentially large keys and values. In addition, leveldb methods do not return
-null-terminated C-style strings since leveldb keys and values are allowed to
-contain `'\0'` bytes.
+`it->key()`和`it->value()`会返回一个`leveldb::Slice`类型的实例。切片是一个
+包含有长度和指向外部字节数据的指针的简单的数据结构。切片是对`std::string`的简单
+替代。这样对于大一点的键和值来说，可以省了很多拷贝数据的开销。除此之外，leveldb的
+方法不会返回以null结尾的C语言风格的字符串，也就是说leveldb的键和值中可以包含`'\0'`
+字节。
 
-C++ strings and null-terminated C-style strings can be easily converted to a
-Slice:
+C++字符串和null结尾的C风格字符串可以很轻易的转换成一个切片：
 
 ```c++
 leveldb::Slice s1 = "hello";
@@ -200,16 +196,15 @@ std::string str("world");
 leveldb::Slice s2 = str;
 ```
 
-A Slice can be easily converted back to a C++ string:
+切片也同样可以很容易的转换成C++字符串
 
 ```c++
 std::string str = s1.ToString();
 assert(str == std::string("hello"));
 ```
 
-Be careful when using Slices since it is up to the caller to ensure that the
-external byte array into which the Slice points remains live while the Slice is
-in use. For example, the following is buggy:
+使用Slice的时候需要它的调用者来负责它指针指向的外部的字节数组的生命周期，否则会
+遇到下面的这种bug：
 
 ```c++
 leveldb::Slice slice;
@@ -220,8 +215,7 @@ if (...) {
 Use(slice);
 ```
 
-When the if statement goes out of scope, str will be destroyed and the backing
-storage for slice will disappear.
+当出了if块的时候str对象会被释放掉，slice中的指针就会指向一块已经被释放的内存。
 
 ## Comparators
 
